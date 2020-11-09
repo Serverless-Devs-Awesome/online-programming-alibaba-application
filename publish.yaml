@@ -1,0 +1,23 @@
+Type: Application
+Name: online-programming
+Version: 0.0.2
+Provider:
+  - Alibaba
+Description: 在线代码执行
+HomePage: https://github.com/Serverless-Devs-Awesome/online-programming-alibaba-application
+Tags:
+  - 在线编程
+  - online programming
+Category: 其他
+Service:
+  函数计算:
+    Authorities:
+      - 创建函数
+      - 删除函数
+      - 创建服务
+      - 删除服务
+    Runtime: Python
+  对象存储:
+    Authorities:
+      - 创建存储桶
+      - 设置权限

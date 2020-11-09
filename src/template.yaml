@@ -1,0 +1,131 @@
+Global:
+  Access: release
+  Region: cn-beijing
+  AccessKeyId: ${Env(AccessKeyId)}
+  AccessKeySecret: ${Env(AccessKeySecret)}
+  OSSConfBucketCodeName: serverlessbook-runcode-code
+  OSSConfBucketTargetName: serverlessbook-runcode-others
+  OSSConfObjectSignUrlTimeOut: 1200
+  Service:
+    Name: ServerlessBook
+    Description: Serverless图书案例
+    Log: Auto
+
+CodeBucket:
+  Component: oss
+  Provider: alibaba
+  Access: ${Global.Access}
+  Properties:
+    Region: ${Global.Region}
+    Bucket: ${Global.OSSConfBucketCodeName}
+
+TargetBucket:
+  Component: oss
+  Provider: alibaba
+  Access: ${Global.Access}
+  Properties:
+    Region: ${Global.Region}
+    Bucket: ${Global.OSSConfBucketTargetName}
+
+ServerlessBookRunCodeMain:
+  Component: fc
+  Provider: alibaba
+  Access: ${Global.Access}
+  Extends:
+    deploy:
+      - Hook: s ServerlessBookRunCodeMain install docker
+        Src: ./main
+        Pre: true
+  Properties:
+    Region: ${Global.Region}
+    Service: ${Global.Service}
+    Function:
+      Name: serverless_runcode_main
+      Description: 业务逻辑
+      CodeUri: ./main
+      Handler: index.handler
+      MemorySize: 128
+      Runtime: python3
+      Timeout: 5
+      Environment:
+        - Key: AccessKeyId
+          Value: ${Global.AccessKeyId}
+        - Key: AccessKeySecret
+          Value: ${Global.AccessKeySecret}
+        - Key: OSSConfBucketCodeName
+          Value: ${CodeBucket.Output.Bucket}
+        - Key: OSSConfBucketTargetName
+          Value: ${TargetBucket.Output.Bucket}
+        - Key: OSSConfEndPoint
+          Value: ${CodeBucket.Output.Endpoint.Publish}
+        - Key: OSSConfObjectSignUrlTimeOut
+          Value: '1200'
+      Triggers:
+        - Name: RunCodeMain
+          Type: HTTP
+          Parameters:
+            AuthType: ANONYMOUS
+            Methods:
+              - GET
+              - POST
+              - PUT
+            Domains:
+              - Domain: Auto
+
+ServerlessBookRunCodeCompiler:
+  Component: fc
+  Provider: alibaba
+  Access: ${Global.Access}
+  Extends:
+    deploy:
+      - Hook: s ServerlessBookRunCodeCompiler install docker
+        Src: ./compiler
+        Pre: true
+  Properties:
+    Region: ${Global.Region}
+    Service:  ${Global.Service}
+    Function:
+      Name: serverless_runcode_compiler
+      Description: 代码执行器
+      CodeUri: ./compiler
+      Handler: index.handler
+      MemorySize: 128
+      Runtime: python3
+      Timeout: 60
+      Environment: ${ServerlessBookRunCodeMain.Properties.Function.Environment}
+      Triggers:
+        - Name: OSSTrigger
+          Type: OSS
+          Parameters:
+            Bucket: ${CodeBucket.Output.Bucket}
+            Events:
+              - 'oss:ObjectCreated:*'
+            Filter:
+              Prefix: ''
+              Suffix: ''
+
+ServerlessBookRunCodeDemo:
+  Component: fc
+  Provider: alibaba
+  Properties:
+    Region: ${Global.Region}
+    Service: ${Global.Service}
+    Function:
+      Name: serverless_run_code_ordinary
+      Description: 简单版代码在线执行器
+      CodeUri: ./ordinary
+      Handler: index.handler
+      MemorySize: 128
+      Runtime: python3
+      Timeout: 5
+      Triggers:
+        - Name: RunCodeOrdinary
+          Type: HTTP
+          Parameters:
+            AuthType: ANONYMOUS
+            Methods:
+              - GET
+              - POST
+              - PUT
+            Domains:
+              - Domain: Auto

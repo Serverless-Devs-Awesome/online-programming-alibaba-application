@@ -2,7 +2,7 @@ Type: Application
 Name: online-programming
 Version: 0.0.3
 Provider:
-  - Alibaba
+  - 阿里云
 Description: 在线代码执行
 HomePage: https://github.com/Serverless-Devs-Awesome/online-programming-alibaba-application
 Tags:
